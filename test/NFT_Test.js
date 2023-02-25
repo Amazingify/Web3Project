@@ -49,14 +49,40 @@ describe("NFT tests", () => {
       })
       expect(await contract.balances(accounts[1].address)).to.equal(3);
       let balanceAfter = await ethers.provider.getBalance(accounts[1].address);
-
       balanceBefore = ethers.utils.formatEther(balanceBefore);
       balanceAfter = ethers.utils.formatEther(balanceAfter);
-      
       expect(Math.floor(balanceBefore - balanceAfter)).to.equal(3);
-
     })
 
+    it("prevents minting more than limit", async () => {
+      const contract = await deployedContract.connect(accounts[2]);
+      await contract.mint(accounts[1].address, 1, {
+        value: ethers.utils.parseEther("1")
+      })
+
+      let tx = contract.mint(accounts[1].address, 3, {
+        value: ethers.utils.parseEther("3")
+      })
+      await expect(tx).to.be.revertedWith("mint: limit reached");
+    })
+
+    it("prevents minting with no funds", async () => {
+      const contract = await deployedContract.connect(accounts[2]);
+
+      let tx = contract.mint(accounts[1].address, 1, {
+        value: ethers.utils.parseEther("0")
+      })
+      await expect(tx).to.revertedWith("mint:funds sent not enough")
+    })
+
+    it("prevents minting with amount of 0", async () => {
+      const contract = await deployedContract.connect(accounts[2]);
+
+      let tx = contract.mint(accounts[1].address, 0, {
+        value: ethers.utils.parseEther("0")
+      })
+      await expect(tx).to.revertedWith("mint: amount is 0")
+    })
 
   })
 

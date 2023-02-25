@@ -31,7 +31,7 @@ contract NFT is ERC721 {
 
     function mint(address to, uint amount) external payable nonReentrant {
         require(amount > 0, "mint: amount is 0");
-        require(msg.value >= price * amount, "mint:amount not enough");
+        require(msg.value >= price * amount, "mint:funds sent not enough");
         require(balances[to] + amount <= limitPerUser,"mint: limit reached");
        
         if (msg.value > price * amount) {
