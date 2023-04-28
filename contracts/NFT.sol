@@ -8,16 +8,17 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract NFT is ERC721, ReentrancyGuard {
+    
     uint256 public totalSupply = 0;
     uint256 public price = 1 ether; // ether = 1^18;
-
-    bool lock;
-
     uint256 public limitPerUser = 3;
     mapping(address => uint) public balances;
+    mapping(address => bool) public whitelist;
+
+    address public owner;
 
     constructor() ERC721("NFT", "nft") {
-        lock = false;
+        owner = msg.sender;
     }
 
     modifier mintChecks(
@@ -31,14 +32,17 @@ contract NFT is ERC721, ReentrancyGuard {
         _;
     }
 
+    modifier onlyOwner {
+        require(msg.sender == owner, "onlyOwner: unathorized");
+        _;
+    }
+
     function mint(
         address to,
         uint amount
     ) external payable nonReentrant mintChecks(amount, msg.value, to) {
         _handleRefund(msg.value, price, amount);
-
         balances[to] += amount;
-
         for (uint i = 0; i < amount; i++) _mint(to, totalSupply++);
     }
 
@@ -49,4 +53,5 @@ contract NFT is ERC721, ReentrancyGuard {
             require(status, "_handleRefund: refund failed");
         }
     }
+
 }
