@@ -14,7 +14,7 @@ describe("NFT tests", () => {
     beforeEach(async () => {
       accounts = await ethers.getSigners();
       let contract = await ethers.getContractFactory("NFT", accounts[0]);
-      let owner  = accounts[0].address
+      let owner = accounts[0].address
       deployedContract = await contract.deploy();
       deployedContract = await deployedContract.deployed();
     })
@@ -24,7 +24,11 @@ describe("NFT tests", () => {
     })
 
     it("Tests Mint", async () => {
+
       let balanceBefore = await ethers.provider.getBalance(accounts[0].address);
+     
+      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[0].address])
+      
       await deployedContract.connect(accounts[0]).mint(
         accounts[0].address, // to
         1, // amount
@@ -32,6 +36,7 @@ describe("NFT tests", () => {
           value: ethers.utils.parseEther("1") // msg.value
         }
       );
+
       let balanceAfter = await ethers.provider.getBalance(accounts[0].address);
       balanceBefore = ethers.utils.formatEther(balanceBefore);
       balanceAfter = ethers.utils.formatEther(balanceAfter);
@@ -45,6 +50,7 @@ describe("NFT tests", () => {
     it("allows minting 3 times per user", async () => {
       const contract = await deployedContract.connect(accounts[1]);
       let balanceBefore = await ethers.provider.getBalance(accounts[1].address);
+      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[1].address])
       await contract.mint(accounts[1].address, 3, {
         value: ethers.utils.parseEther("3")
       })
@@ -56,7 +62,9 @@ describe("NFT tests", () => {
     })
 
     it("prevents minting more than limit", async () => {
+
       const contract = await deployedContract.connect(accounts[2]);
+      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[1].address])
       await contract.mint(accounts[1].address, 1, {
         value: ethers.utils.parseEther("1")
       })
@@ -84,40 +92,46 @@ describe("NFT tests", () => {
       })
       await expect(tx).to.revertedWith("mint: amount is 0")
     })
-    
+
     it("allows owner to withdraw", async () => {
-
       const contract = await deployedContract.connect(accounts[2]);
-
+      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[2].address])
       await contract.mint(accounts[2].address, 3, {
         value: ethers.utils.parseEther("3")
       })
-
       let balance = await contract.balanceOf(accounts[2].address);
       expect(balance).to.equals(3);
-
       let contractBalance = await ethers.provider.getBalance(contract.address);
       console.log(ethers.utils.formatEther(contractBalance));
       let owner = accounts[0];
-
       expect(await contract.owner()).to.equal(accounts[0].address);
-
       const ownerBalanceBefore = await ethers.provider.getBalance(owner.address);
-
       await deployedContract.connect(accounts[0]).withdraw();
-
       const ownerBalanceAfter = await ethers.provider.getBalance(owner.address);
-
       let profit = ownerBalanceAfter.sub(ownerBalanceBefore);
-      
-  
       let result = ethers.utils.formatEther(profit);
       result = Math.ceil(result);
-      console.log(result);
-
       expect(result).to.equal(3);
     })
 
+
+    it("adds users to the whitelist", async () => {
+
+      const contract = await deployedContract.connect(accounts[0]);
+
+      const whitelist = [
+        accounts[1].address,
+        accounts[2].address,
+        accounts[3].address,
+        accounts[4].address,
+        accounts[5].address,
+      ]
+
+      await contract.addToWhitelist(whitelist);
+      const state = await contract.whitelist(accounts[3].address);
+      expect(state).to.be.true
+      
+    })
   })
 
 });
