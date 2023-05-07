@@ -14,6 +14,7 @@ describe("NFT tests", () => {
     beforeEach(async () => {
       accounts = await ethers.getSigners();
       let contract = await ethers.getContractFactory("NFT", accounts[0]);
+      let owner  = accounts[0].address
       deployedContract = await contract.deploy();
       deployedContract = await deployedContract.deployed();
     })
@@ -82,6 +83,39 @@ describe("NFT tests", () => {
         value: ethers.utils.parseEther("0")
       })
       await expect(tx).to.revertedWith("mint: amount is 0")
+    })
+    
+    it("allows owner to withdraw", async () => {
+
+      const contract = await deployedContract.connect(accounts[2]);
+
+      await contract.mint(accounts[2].address, 3, {
+        value: ethers.utils.parseEther("3")
+      })
+
+      let balance = await contract.balanceOf(accounts[2].address);
+      expect(balance).to.equals(3);
+
+      let contractBalance = await ethers.provider.getBalance(contract.address);
+      console.log(ethers.utils.formatEther(contractBalance));
+      let owner = accounts[0];
+
+      expect(await contract.owner()).to.equal(accounts[0].address);
+
+      const ownerBalanceBefore = await ethers.provider.getBalance(owner.address);
+
+      await deployedContract.connect(accounts[0]).withdraw();
+
+      const ownerBalanceAfter = await ethers.provider.getBalance(owner.address);
+
+      let profit = ownerBalanceAfter.sub(ownerBalanceBefore);
+      
+  
+      let result = ethers.utils.formatEther(profit);
+      result = Math.ceil(result);
+      console.log(result);
+
+      expect(result).to.equal(3);
     })
 
   })

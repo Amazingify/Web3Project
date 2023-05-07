@@ -54,4 +54,10 @@ contract NFT is ERC721, ReentrancyGuard {
         }
     }
 
+    function withdraw() external onlyOwner {
+       uint balance = address(this).balance;
+       (bool status,) = (owner).call{value: balance}("");
+       require(status, "withdraw: trasnfer failed");
+    }
+
 }
