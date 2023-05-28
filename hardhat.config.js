@@ -10,8 +10,8 @@ module.exports = {
   gasReporter: {
     enabled:true,
     currency: "USD",
-    coinmarketcap:process.env.COIN_KEY,
+    coinmarketcap: process?.env?.COIN_KEY,
     gasPrice:80,
-    gasPriceApi:process.env.ETHERSCAN_KEY
+    gasPriceApi:process?.env?.COIN_KEY
   },
 };
