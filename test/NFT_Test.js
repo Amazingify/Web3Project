@@ -125,6 +125,11 @@ describe("NFT tests", () => {
         accounts[3].address,
         accounts[4].address,
         accounts[5].address,
+        accounts[6].address,
+        accounts[7].address,
+        accounts[8].address,
+        accounts[9].address,
+        accounts[10].address,
       ]
 
       await contract.addToWhitelist(whitelist);
