@@ -7,6 +7,15 @@ const { ethers } = require("hardhat");
 
 describe("NFT tests", () => {
 
+  const generateSignature = async (signer, message) => {
+    const data = ethers.utils.solidityPack(["address"], [message]);
+    let hash = ethers.utils.keccak256(data); // keccak256 hash the message
+    hash = ethers.utils.arrayify(hash); // convert the hash to an array of bytes
+    let sign = await signer.signMessage(hash);
+    return sign;
+  };
+  
+
   describe("Mint test", () => {
     let deployedContract
     let accounts;
@@ -27,15 +36,15 @@ describe("NFT tests", () => {
 
       let balanceBefore = await ethers.provider.getBalance(accounts[0].address);
      
-      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[0].address])
-      
+      let signature = generateSignature(accounts[0],accounts[0].address)
       await deployedContract.connect(accounts[0]).mint(
         accounts[0].address, // to
         1, // amount
+        signature,
         {
           value: ethers.utils.parseEther("1") // msg.value
-        }
-      );
+       })
+        
 
       let balanceAfter = await ethers.provider.getBalance(accounts[0].address);
       balanceBefore = ethers.utils.formatEther(balanceBefore);
@@ -50,8 +59,9 @@ describe("NFT tests", () => {
     it("allows minting 3 times per user", async () => {
       const contract = await deployedContract.connect(accounts[1]);
       let balanceBefore = await ethers.provider.getBalance(accounts[1].address);
-      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[1].address])
-      await contract.mint(accounts[1].address, 3, {
+      let signature = generateSignature(accounts[0], accounts[1].address);
+
+      await contract.mint(accounts[1].address, 3, signature, {
         value: ethers.utils.parseEther("3")
       })
       expect(await contract.balances(accounts[1].address)).to.equal(3);
@@ -64,12 +74,13 @@ describe("NFT tests", () => {
     it("prevents minting more than limit", async () => {
 
       const contract = await deployedContract.connect(accounts[2]);
-      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[1].address])
-      await contract.mint(accounts[1].address, 1, {
+      let signature = generateSignature(accounts[0], accounts[2].address);
+
+      await contract.mint(accounts[1].address, 1, signature,{
         value: ethers.utils.parseEther("1")
       })
 
-      let tx = contract.mint(accounts[1].address, 3, {
+      let tx =  contract.mint(accounts[1].address, 3, signature, {
         value: ethers.utils.parseEther("3")
       })
       await expect(tx).to.be.revertedWith("mint: limit reached");
@@ -77,8 +88,8 @@ describe("NFT tests", () => {
 
     it("prevents minting with no funds", async () => {
       const contract = await deployedContract.connect(accounts[2]);
-
-      let tx = contract.mint(accounts[1].address, 1, {
+      let signature = generateSignature(accounts[0], accounts[2].address);
+      let tx = contract.mint(accounts[1].address, 1, signature,{
         value: ethers.utils.parseEther("0")
       })
       await expect(tx).to.revertedWith("mint:funds sent not enough")
@@ -86,8 +97,8 @@ describe("NFT tests", () => {
 
     it("prevents minting with amount of 0", async () => {
       const contract = await deployedContract.connect(accounts[2]);
-
-      let tx = contract.mint(accounts[1].address, 0, {
+      let signature = generateSignature(accounts[0], accounts[2].address);
+      let tx = contract.mint(accounts[1].address, 0, signature,{
         value: ethers.utils.parseEther("0")
       })
       await expect(tx).to.revertedWith("mint: amount is 0")
@@ -95,8 +106,8 @@ describe("NFT tests", () => {
 
     it("allows owner to withdraw", async () => {
       const contract = await deployedContract.connect(accounts[2]);
-      await deployedContract.connect(accounts[0]).addToWhitelist([accounts[2].address])
-      await contract.mint(accounts[2].address, 3, {
+      let signature = generateSignature(accounts[0], accounts[2].address);
+      await contract.mint(accounts[2].address, 3, signature,{
         value: ethers.utils.parseEther("3")
       })
       let balance = await contract.balanceOf(accounts[2].address);
@@ -114,29 +125,6 @@ describe("NFT tests", () => {
       expect(result).to.equal(3);
     })
 
-
-    it("adds users to the whitelist", async () => {
-
-      const contract = await deployedContract.connect(accounts[0]);
-
-      const whitelist = [
-        accounts[1].address,
-        accounts[2].address,
-        accounts[3].address,
-        accounts[4].address,
-        accounts[5].address,
-        accounts[6].address,
-        accounts[7].address,
-        accounts[8].address,
-        accounts[9].address,
-        accounts[10].address,
-      ]
-
-      await contract.addToWhitelist(whitelist);
-      const state = await contract.whitelist(accounts[3].address);
-      expect(state).to.be.true
-      
-    })
   })
 
 });
